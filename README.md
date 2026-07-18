@@ -1,6 +1,10 @@
 # Auditor Fraud Detection
 
-Upload a zip of company books and supporting documents; stream a **ranked findings feed** for auditors (not a dashboard). Detectors are config-driven and general — they transfer to other dossiers via categories, not memorized sample IDs.
+## Description
+
+Ranked fraud findings feed from company dossier zips — DuckDB detectors, citations, confidence bands, optional GPT-5.6 narration. Built for auditors, not dashboards.
+
+![Auditor fraud findings architecture](docs/architecture.png)
 
 ## What judges should know
 
@@ -52,7 +56,7 @@ OpenAI env (see `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL_PRIMARY=gpt-5.6
 
 ## Architecture
 
-![Auditor fraud findings architecture](docs/architecture.png)
+Detectors are config-driven and general — they transfer across dossiers via categories, not memorized sample IDs.
 
 ```
 ZipUpload → Parse(GDPdU/CSV/XLSX/PDF/DOCX) → DuckDB
