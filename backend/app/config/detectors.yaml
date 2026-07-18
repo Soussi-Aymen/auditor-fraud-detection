@@ -79,11 +79,15 @@ threshold_structuring:
   cluster_base_boost: 18
 
 near_duplicate_entities:
-  base: 45
-  name_similarity_min: 0.94
+  base: 40
+  name_similarity_min: 0.96
   # Same normalized base name after stripping legal forms
   legal_form_regex: '\s*(gmbh\s*&\s*co\.\s*kg|gmbh|ag|se|e\.k\.|kg|ohg|ug)\s*$'
-  max_hits: 20
+  # Auditor-first: AG vs GmbH same trade name is usually master-data hygiene, not fraud
+  skip_legal_form_only: true
+  # Keep shared-address hits only when names also look related
+  require_name_overlap_for_address: true
+  max_hits: 5
 
 unsupported_transaction:
   base: 42

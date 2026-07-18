@@ -10,6 +10,7 @@ from typing import Any
 import duckdb
 
 from app.config import load_detector_config
+from app.detection.citations import enrich_citations
 from app.detection.detectors import run_all_detectors
 from app.detection.scoring import (
     band_for_confidence,
@@ -94,7 +95,8 @@ def run_detectors(
         conn.close()
 
     findings = filter_skip_band(findings)
-    return sorted(findings, key=lambda f: f.confidence, reverse=True)
+    findings = sorted(findings, key=lambda f: f.confidence, reverse=True)
+    return enrich_citations(parse, findings)
 
 
 def run_detectors_on_db(

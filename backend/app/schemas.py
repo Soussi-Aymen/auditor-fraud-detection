@@ -31,6 +31,11 @@ class Citation(BaseModel):
     file: str
     locator: str
     quote: str
+    # Deep-link fields for UI source viewer (optional for backwards compat)
+    source_path: str | None = None
+    line: int | None = None
+    row: int | None = None
+    detail: str | None = None
 
 
 class Finding(BaseModel):

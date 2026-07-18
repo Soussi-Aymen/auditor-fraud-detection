@@ -54,9 +54,12 @@ def _safe_table_name(folder: str, table: str) -> str:
 def load_gdpdu_tables(
     root: Path,
     aliases: dict[str, str],
-) -> dict[str, pd.DataFrame]:
+) -> tuple[dict[str, pd.DataFrame], dict[str, "TableSource"]]:
     """Load all GDPdU packages under root (folders with index.xml + TXT)."""
+    from app.parsing.sources import TableSource
+
     frames: dict[str, pd.DataFrame] = {}
+    sources: dict[str, TableSource] = {}
     for index_path in sorted(root.rglob("index.xml")):
         folder = index_path.parent.name
         for spec in parse_index_xml(index_path):
@@ -82,4 +85,8 @@ def load_gdpdu_tables(
             df = normalize_dataframe(df)
             key = _safe_table_name(folder, str(spec["name"]))
             frames[key] = df
-    return frames
+            sources[key] = TableSource(
+                path=str(txt_path.relative_to(root)),
+                has_header=False,
+            )
+    return frames, sources

@@ -30,6 +30,7 @@ class Job:
     error: str | None = None
     findings: list[Finding] = field(default_factory=list)
     table_counts: dict[str, int] = field(default_factory=dict)
+    extract_dir: Path | None = None
     ready: asyncio.Event = field(default_factory=asyncio.Event)
     task: asyncio.Task[None] | None = None
 
@@ -90,6 +91,7 @@ class JobStore:
             self._apply_saved_verdicts(job.session_dir, findings)
             job.findings = findings
             job.table_counts = dict(parse.table_counts)
+            job.extract_dir = parse.extract_dir
             self._write_findings(job)
             job.status = JobStatus.ready
         except Exception as exc:  # noqa: BLE001 — surface to client via SSE

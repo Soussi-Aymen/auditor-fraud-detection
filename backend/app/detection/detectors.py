@@ -567,15 +567,17 @@ def detect_near_duplicate_entities(
     from app.detection.types import tables_matching
 
     nd = cfg.get("near_duplicate_entities") or {}
-    base = float(nd.get("base", 45))
-    sim_min = float(nd.get("name_similarity_min", 0.94))
+    base = float(nd.get("base", 40))
+    sim_min = float(nd.get("name_similarity_min", 0.96))
     legal_re = str(
         nd.get(
             "legal_form_regex",
             r"\s*(gmbh\s*&\s*co\.\s*kg|gmbh|ag|se|e\.k\.|kg|ohg|ug)\s*$",
         )
     )
-    max_hits = int(nd.get("max_hits", 20))
+    max_hits = int(nd.get("max_hits", 5))
+    skip_legal_only = bool(nd.get("skip_legal_form_only", True))
+    require_name_for_addr = bool(nd.get("require_name_overlap_for_address", True))
     hits: list[DetectorHit] = []
 
     # Prefer master table (has name), not postings
@@ -595,8 +597,22 @@ def detect_near_duplicate_entities(
     plz = cols.get("lieferantenplz")
     ort = cols.get("lieferantenort")
 
-    # 1) Exact same street + PLZ, different vendor_id
+    # 1) Exact same street + PLZ, different vendor_id (only if names related)
     if street and plz:
+        name_overlap = ""
+        if require_name_for_addr:
+            name_overlap = f"""
+             AND (
+               lower(split_part(trim(regexp_replace(lower(CAST(a.{qident(name_col)} AS VARCHAR)),
+                 '{legal_re}', '')), ' ', 1))
+               = lower(split_part(trim(regexp_replace(lower(CAST(b.{qident(name_col)} AS VARCHAR)),
+                 '{legal_re}', '')), ' ', 1))
+               OR jaro_winkler_similarity(
+                    lower(CAST(a.{qident(name_col)} AS VARCHAR)),
+                    lower(CAST(b.{qident(name_col)} AS VARCHAR))
+                  ) >= 0.88
+             )
+            """
         sql = f"""
             SELECT
               a.vendor_id AS id1, b.vendor_id AS id2,
@@ -610,21 +626,22 @@ def detect_near_duplicate_entities(
              AND a.{qident(plz)} IS NOT NULL
              AND CAST(a.{qident(street)} AS VARCHAR) = CAST(b.{qident(street)} AS VARCHAR)
              AND CAST(a.{qident(plz)} AS VARCHAR) = CAST(b.{qident(plz)} AS VARCHAR)
+             {name_overlap}
         """
         try:
             for _, row in conn.execute(sql).fetchdf().iterrows():
                 hits.append(
                     DetectorHit(
                         category="near_duplicate_entities",
-                        title="Vendors share the same street address",
+                        title="Related vendors share the same street address",
                         summary=(
                             f"Vendors {row['id1']} ({row['n1']}) and {row['id2']} ({row['n2']}) "
                             f"share address {row['street']}, {row['plz']}"
                             + (f" {row['city']}" if row.get("city") else "")
-                            + ". Possible duplicate / related-party entity."
+                            + " and look name-related. Possible duplicate / related-party master data."
                         ),
                         base=base,
-                        statistical_strength=22.0,
+                        statistical_strength=18.0,
                         citations=[
                             Citation(
                                 n=1,
@@ -649,7 +666,7 @@ def detect_near_duplicate_entities(
         except duckdb.Error:
             pass
 
-    # 2) Same normalized base name (legal form stripped), or high Jaro with shared first token
+    # 2) Near-duplicate names — skip pure legal-form variants (AG vs GmbH)
     sql = f"""
         WITH base AS (
           SELECT
@@ -667,13 +684,17 @@ def detect_near_duplicate_entities(
           CASE WHEN a.base_name = b.base_name AND length(a.base_name) > 5 THEN true ELSE false END AS same_base
         FROM base a
         JOIN base b ON a.vendor_id < b.vendor_id
-        WHERE (a.base_name = b.base_name AND length(a.base_name) > 5)
-           OR (
+        WHERE (
                 jaro_winkler_similarity(lower(a.name), lower(b.name)) >= {sim_min}
                 AND split_part(a.base_name, ' ', 1) = split_part(b.base_name, ' ', 1)
                 AND length(split_part(a.base_name, ' ', 1)) >= 3
+                AND a.base_name <> b.base_name
               )
-        ORDER BY same_base DESC, sim DESC
+           OR (
+                NOT {str(skip_legal_only).lower()}
+                AND a.base_name = b.base_name AND length(a.base_name) > 5
+              )
+        ORDER BY sim DESC
         LIMIT {max_hits * 2}
     """
     try:
@@ -688,20 +709,18 @@ def detect_near_duplicate_entities(
             continue
         seen_pairs.add(pair)
         same_base = bool(row["same_base"])
+        if skip_legal_only and same_base:
+            continue  # AG/GmbH hygiene — not a fraud priority
         sim = float(row["sim"])
-        strength = 20.0 if same_base else 10.0 + 10.0 * sim
+        strength = 12.0 + 10.0 * sim
         hits.append(
             DetectorHit(
                 category="near_duplicate_entities",
-                title="Near-duplicate vendor names",
+                title="Near-duplicate vendor names (possible shell twin)",
                 summary=(
                     f"Vendors {row['id1']} ({row['n1']}) and {row['id2']} ({row['n2']}) "
-                    + (
-                        f"share normalized name '{row['base_name']}'"
-                        if same_base
-                        else f"have name similarity {sim:.3f}"
-                    )
-                    + ". Review for duplicate master data."
+                    f"have name similarity {sim:.3f} with different normalized bases. "
+                    "Review for duplicate or lookalike master data (not mere legal-form variants)."
                 ),
                 base=base,
                 statistical_strength=strength,

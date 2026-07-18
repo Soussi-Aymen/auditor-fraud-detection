@@ -9,6 +9,7 @@ from pathlib import Path
 from app.config import load_column_aliases
 from app.parsing.documents import DocumentChunk, extract_documents
 from app.parsing.gdpdu import load_gdpdu_tables
+from app.parsing.sources import TableSource
 from app.parsing.tabular import load_csv_tables, load_xlsx_tables
 from app.parsing.zip_extract import clear_dir, extract_zip
 from app.storage.duckdb_session import DuckDBSession
@@ -21,6 +22,7 @@ class ParseResult:
     extract_dir: Path
     table_counts: dict[str, int] = field(default_factory=dict)
     document_chunks: list[DocumentChunk] = field(default_factory=list)
+    table_sources: dict[str, TableSource] = field(default_factory=dict)
 
 
 def load_dossier(
@@ -46,10 +48,17 @@ def load_dossier(
     dossier_root = extract_zip(zip_path, extract_dir)
     aliases = load_column_aliases()
 
-    frames = {}
-    frames.update(load_gdpdu_tables(dossier_root, aliases))
-    frames.update(load_csv_tables(dossier_root, aliases))
-    frames.update(load_xlsx_tables(dossier_root, aliases))
+    frames: dict = {}
+    sources: dict[str, TableSource] = {}
+    gdpdu_frames, gdpdu_sources = load_gdpdu_tables(dossier_root, aliases)
+    frames.update(gdpdu_frames)
+    sources.update(gdpdu_sources)
+    csv_frames, csv_sources = load_csv_tables(dossier_root, aliases)
+    frames.update(csv_frames)
+    sources.update(csv_sources)
+    xlsx_frames, xlsx_sources = load_xlsx_tables(dossier_root, aliases)
+    frames.update(xlsx_frames)
+    sources.update(xlsx_sources)
 
     docs = extract_documents(dossier_root)
 
@@ -59,6 +68,7 @@ def load_dossier(
         for name, df in frames.items():
             session.register_dataframe(name, df)
         session.store_documents(docs)
+        session.store_table_sources(sources)
         counts = session.table_row_counts()
     finally:
         session.close()
@@ -69,4 +79,5 @@ def load_dossier(
         extract_dir=dossier_root,
         table_counts=counts,
         document_chunks=docs,
+        table_sources=sources,
     )

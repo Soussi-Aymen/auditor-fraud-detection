@@ -46,6 +46,31 @@ class DuckDBSession:
         )
         self.register_dataframe("doc_chunks", df)
 
+    def store_table_sources(self, sources: dict) -> None:
+        from app.parsing.sources import TableSource
+
+        rows = [
+            {
+                "table_name": name,
+                "source_path": meta.path if isinstance(meta, TableSource) else str(meta),
+                "has_header": bool(meta.has_header) if isinstance(meta, TableSource) else False,
+            }
+            for name, meta in sources.items()
+        ]
+        if not rows:
+            self.conn.execute(
+                """
+                CREATE OR REPLACE TABLE table_sources (
+                    table_name VARCHAR,
+                    source_path VARCHAR,
+                    has_header BOOLEAN
+                )
+                """
+            )
+            return
+        df = pd.DataFrame(rows)
+        self.register_dataframe("table_sources", df)
+
     def table_row_counts(self) -> dict[str, int]:
         rows = self.conn.execute(
             """

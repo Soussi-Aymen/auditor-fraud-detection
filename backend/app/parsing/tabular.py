@@ -39,18 +39,30 @@ def _read_csv(path: Path) -> pd.DataFrame:
     return df
 
 
-def load_csv_tables(root: Path, aliases: dict[str, str]) -> dict[str, pd.DataFrame]:
+def load_csv_tables(
+    root: Path, aliases: dict[str, str]
+) -> tuple[dict[str, pd.DataFrame], dict[str, "TableSource"]]:
+    from app.parsing.sources import TableSource
+
     frames: dict[str, pd.DataFrame] = {}
+    sources: dict[str, TableSource] = {}
     for path in sorted(root.rglob("*.csv")):
         rel = str(path.relative_to(root))
         df = _read_csv(path)
         df.columns = apply_aliases([str(c) for c in df.columns], aliases)
-        frames[f"csv_{_safe_name(rel)}"] = normalize_dataframe(df)
-    return frames
+        key = f"csv_{_safe_name(rel)}"
+        frames[key] = normalize_dataframe(df)
+        sources[key] = TableSource(path=rel, has_header=True)
+    return frames, sources
 
 
-def load_xlsx_tables(root: Path, aliases: dict[str, str]) -> dict[str, pd.DataFrame]:
+def load_xlsx_tables(
+    root: Path, aliases: dict[str, str]
+) -> tuple[dict[str, pd.DataFrame], dict[str, "TableSource"]]:
+    from app.parsing.sources import TableSource
+
     frames: dict[str, pd.DataFrame] = {}
+    sources: dict[str, TableSource] = {}
     for path in sorted(root.rglob("*.xlsx")):
         if path.name.startswith("~$"):
             continue
@@ -63,4 +75,6 @@ def load_xlsx_tables(root: Path, aliases: dict[str, str]) -> dict[str, pd.DataFr
             sheet_key = re.sub(r"[^a-z0-9_]+", "_", sheet.lower()).strip("_")
             key = f"xlsx_{base}" if len(xl.sheet_names) == 1 else f"xlsx_{base}__{sheet_key}"
             frames[key] = normalize_dataframe(df)
-    return frames
+            # Point at workbook; sheet noted in path fragment for display
+            sources[key] = TableSource(path=rel, has_header=True)
+    return frames, sources
