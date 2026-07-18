@@ -1,0 +1,32 @@
+# Generic column aliases for schema tolerance across dossiers.
+# Maps alternate header names → canonical names used by detectors (later phases).
+# Do NOT put sealed-dossier entity IDs or amounts here.
+
+aliases:
+  # Actor / four-eyes
+  GEAENDERT_VON: creator
+  GEÄNDERT_VON: creator
+  CREATED_BY: creator
+  ERSTELLER: creator
+  GENEHMIGT_VON: approver
+  APPROVED_BY: approver
+  FREIGEBER: approver
+
+  # Counterparty / accounts
+  LIEFERANTENKONTONUMMER: vendor_id
+  KREDITOR: vendor_id
+  KUNDENKONTONUMMER: customer_id
+  DEBITOR: customer_id
+  SACHKONTONUMMER: gl_account
+
+  # Dates / amounts / docs
+  BUCHUNGSDATUM: booking_date
+  BELEGDATUM: document_date
+  FAKTURADATUM: invoice_date
+  LEISTUNGSDATUM: service_date
+  BUCHUNGSBETRAG: amount
+  BETRAG_EUR: amount
+  BELEGNUMMER: document_number
+  RECHNUNGSNUMMER: invoice_number
+  BUCHUNGSTEXT: booking_text
+  BEMERKUNG: remark

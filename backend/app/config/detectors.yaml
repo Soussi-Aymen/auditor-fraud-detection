@@ -1,0 +1,101 @@
+# Generic detector parameters. Do NOT put sealed-dossier entity IDs here.
+
+confidence:
+  skip_below: 35
+  high_above: 65
+  # score = clamp(0..100, base + statistical_strength + stage2_delta + multi_category_boost)
+
+stage2:
+  max_quote_chars: 160
+  hit_delta: 12
+  miss_delta: -8
+  # When a detector expects document corroboration and finds none
+  expected_miss_delta: 10
+
+multi_category_boost: 8
+
+tables:
+  # Substring match against DuckDB table names (case-insensitive)
+  freigabe: ["freigabe"]
+  stammdaten: ["stammdatenaenderungen", "stammdaten"]
+  vendor_master: ["lieferanten"]
+  vendor_postings: ["lieferantenbuchungen"]
+  customer_master: ["kunden"]
+  gl_postings: ["sachkontobuchungen"]
+  chart_of_accounts: ["sachkonten"]
+  goods_receipt: ["wareneingang"]
+  asset_postings: ["anlagenbuchungen"]
+  invoice_journal: ["fakturajournal"]
+
+segregation_of_duties:
+  base: 55
+  # Sensitive master-data fields (German labels as category keywords)
+  sensitive_fields:
+    - Neuanlage
+    - Bankverbindung
+    - Bank
+  sensitive_field_boost: 15
+
+misclassification:
+  base: 50
+  # Expense/repair keywords capitalized into asset accounts → misclassification
+  repair_keywords:
+    - reparatur
+    - instand
+    - wartung
+    - überhol
+    - ueberhol
+    - austausch
+  asset_booking_types:
+    - Acquisition
+    - acquisition
+  # booking_text keyword → expected GL account name fragments (any match OK)
+  text_account_rules:
+    - keywords: ["beratung", "rechts"]
+      expect_account_name: ["Beratung", "Rechts"]
+    - keywords: ["werbe", "reise"]
+      expect_account_name: ["Werbe", "Reise"]
+    - keywords: ["material"]
+      expect_account_name: ["Material", "Roh", "Ware", "Vorsteuer", "Verbindlich"]
+
+cutoff_timing:
+  base: 48
+  fiscal_year_end_month: 12
+  fiscal_year_end_day: 31
+  # Service/document in prior year, invoice/booking in next year
+  post_period_window_days: 45
+
+threshold_structuring:
+  base: 40
+  # Generic approval / Wesentlichkeit-style round thresholds (EUR)
+  thresholds_eur: [5000, 10000, 20000, 25000, 50000]
+  # Flag amounts in (threshold * (1 - proximity_pct), threshold)
+  proximity_pct: 0.05
+  min_amount_eur: 1000
+  # Cap emitted hits per run (ranked by closeness)
+  max_hits: 8
+  # Same vendor + same day + N near-threshold postings → split-payment cluster
+  min_cluster_size: 3
+  cluster_base_boost: 18
+
+near_duplicate_entities:
+  base: 45
+  name_similarity_min: 0.94
+  # Same normalized base name after stripping legal forms
+  legal_form_regex: '\s*(gmbh\s*&\s*co\.\s*kg|gmbh|ag|se|e\.k\.|kg|ohg|ug)\s*$'
+  max_hits: 20
+
+unsupported_transaction:
+  base: 42
+  # Material goods should have a goods-receipt match (net * vat_rate ≈ gross)
+  vat_rate: 1.19
+  material_keywords: ["Material"]
+  # High-value service text requiring document corroboration
+  service_keywords: ["Beratung", "Rahmenvertrag", "Consulting", "Honorar"]
+  min_service_amount_eur: 10000
+  # New vendor + payment within N days
+  new_vendor_field_keywords: ["Neuanlage"]
+  new_vendor_payment_days: 60
+  new_vendor_min_amount_eur: 5000
+  # Emit only when creator=approver on Neuanlage and/or no goods receipt
+  new_vendor_require_risk_signal: true
