@@ -1,0 +1,46 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+backend/vendor/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Backend runtime
+backend/data/sessions/*
+!backend/data/sessions/.gitkeep
+backend/**/*.duckdb
+backend/**/*.duckdb.wal
+
+# Node / Bun / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.Zone.Identifier
+.idea/
+.cursor/
+*.swp
+*.swo
+
+# Extract / temp
+tmp/
+temp/
+*.tmp
+.cache/
+.tools/
