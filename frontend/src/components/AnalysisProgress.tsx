@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { JobStatus } from '../types'
 
 /** Initial ETA while parse + detect (+ optional LLM) run. */
-const INITIAL_ETA_SEC = 90
+const INITIAL_ETA_SEC = 20
 
 type Props = {
   phase: 'uploading' | 'streaming'
@@ -29,10 +29,9 @@ export function AnalysisProgress({ phase, jobStatus, findingCount }: Props) {
     const id = window.setInterval(() => {
       setEta((s) => {
         // Keep a soft floor so the clock never reads “done” while still waiting
-        if (s <= 8) return 8
-        // Findings arriving → accelerate countdown toward finish
+        if (s <= 3) return 3
         const step = findingCount > 0 ? 2 : 1
-        return Math.max(8, s - step)
+        return Math.max(3, s - step)
       })
     }, 1000)
     return () => window.clearInterval(id)

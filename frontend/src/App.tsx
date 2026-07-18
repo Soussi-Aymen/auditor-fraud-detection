@@ -9,6 +9,7 @@ import {
 import { AnalysisProgress } from './components/AnalysisProgress'
 import {
   FindingsList,
+  filterFindings,
   type BandFilter,
 } from './components/FindingsList'
 import { SourceViewer } from './components/SourceViewer'
@@ -49,16 +50,6 @@ export default function App() {
   useEffect(() => {
     return () => unsubRef.current?.()
   }, [])
-
-  const categoryCounts = useMemo(() => {
-    const m = new Map<string, number>()
-    for (const f of findings) {
-      for (const c of f.categories) {
-        m.set(c, (m.get(c) ?? 0) + 1)
-      }
-    }
-    return [...m.entries()].sort((a, b) => b[1] - a[1])
-  }, [findings])
 
   const resetForNewRun = () => {
     unsubRef.current?.()
@@ -177,10 +168,37 @@ export default function App() {
   }
 
   const waiting = phase === 'uploading' || phase === 'streaming'
-  const highCount = findings.filter((f) => f.band === 'high').length
-  const reviewCount = findings.filter(
+
+  // Cross-filter counts: band chips respect selected category; category chips respect band.
+  const bandScoped = useMemo(
+    () => filterFindings(findings, 'all', category),
+    [findings, category],
+  )
+  const categoryScoped = useMemo(
+    () => filterFindings(findings, filter, 'all'),
+    [findings, filter],
+  )
+  const combined = useMemo(
+    () => filterFindings(findings, filter, category),
+    [findings, filter, category],
+  )
+  const highCount = bandScoped.filter((f) => f.band === 'high').length
+  const reviewCount = bandScoped.filter(
     (f) => f.band === 'needs_human_verification',
   ).length
+  const categoryCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const f of categoryScoped) {
+      for (const c of f.categories) {
+        m.set(c, (m.get(c) ?? 0) + 1)
+      }
+    }
+    // Keep the active category chip visible even when the band combo yields 0
+    if (category !== 'all' && !m.has(category)) {
+      m.set(category, 0)
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1])
+  }, [categoryScoped, category])
   const showSource = sourceLoading || sourceError != null || source != null
 
   return (
@@ -262,7 +280,7 @@ export default function App() {
                   className={filter === 'all' ? 'filter filter--active' : 'filter'}
                   onClick={() => setFilter('all')}
                 >
-                  All <span>{findings.length}</span>
+                  All <span>{bandScoped.length}</span>
                 </button>
                 <button
                   type="button"
@@ -300,7 +318,7 @@ export default function App() {
                   }
                   onClick={() => setCategory('all')}
                 >
-                  All groups
+                  All groups <span>{categoryScoped.length}</span>
                 </button>
                 {categoryCounts.map(([cat, n]) => (
                   <button
@@ -315,6 +333,37 @@ export default function App() {
                   </button>
                 ))}
               </div>
+            )}
+
+            {(filter !== 'all' || category !== 'all') && (
+              <p className="filter-combo no-print" role="status">
+                Showing <strong>{combined.length}</strong> of {findings.length}
+                {filter !== 'all' && (
+                  <>
+                    {' '}
+                    · band:{' '}
+                    <strong>
+                      {filter === 'high' ? 'high confidence' : 'needs verification'}
+                    </strong>
+                  </>
+                )}
+                {category !== 'all' && (
+                  <>
+                    {' '}
+                    · group: <strong>{categoryLabel(category)}</strong>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="filter-combo__clear"
+                  onClick={() => {
+                    setFilter('all')
+                    setCategory('all')
+                  }}
+                >
+                  Clear filters
+                </button>
+              </p>
             )}
 
             <div className="print-only print-cover">

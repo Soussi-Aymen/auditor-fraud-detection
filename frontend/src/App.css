@@ -554,6 +554,29 @@ body {
   margin: -0.35rem 0 1.25rem;
 }
 
+.filter-combo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  margin: -0.5rem 0 1.1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.filter-combo__clear {
+  margin-left: 0.25rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* —— Source viewer modal —— */
 .source-modal {
   position: fixed;
