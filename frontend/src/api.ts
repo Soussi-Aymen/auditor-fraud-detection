@@ -1,5 +1,6 @@
 import type {
   Finding,
+  SourceView,
   StreamDone,
   StreamError,
   StreamStatus,
@@ -32,6 +33,28 @@ export async function setVerdict(
     throw new Error(detail || `Verdict failed (${res.status})`)
   }
   return (await res.json()) as VerdictResponse
+}
+
+export async function fetchSource(
+  jobId: string,
+  opts: {
+    path: string
+    line?: number | null
+    locator?: string
+    quote?: string
+  },
+): Promise<SourceView> {
+  const q = new URLSearchParams()
+  q.set('path', opts.path)
+  if (opts.line != null) q.set('line', String(opts.line))
+  if (opts.locator) q.set('locator', opts.locator)
+  if (opts.quote) q.set('quote', opts.quote)
+  const res = await fetch(`/api/analyze/${jobId}/source?${q.toString()}`)
+  if (!res.ok) {
+    const detail = await res.text()
+    throw new Error(detail || `Source open failed (${res.status})`)
+  }
+  return (await res.json()) as SourceView
 }
 
 export type AnalyzeHandlers = {

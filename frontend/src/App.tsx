@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  fetchSource,
   insertFindingSorted,
   setVerdict,
   subscribeAnalyze,
@@ -10,8 +11,10 @@ import {
   FindingsList,
   type BandFilter,
 } from './components/FindingsList'
+import { SourceViewer } from './components/SourceViewer'
 import { exportFindingsPdf } from './exportPdf'
-import type { Finding, JobStatus } from './types'
+import type { Citation, Finding, JobStatus, SourceView } from './types'
+import { categoryLabel } from './types'
 import './App.css'
 
 type Phase = 'idle' | 'uploading' | 'streaming' | 'done' | 'error'
@@ -36,12 +39,26 @@ export default function App() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [count, setCount] = useState<number | null>(null)
   const [filter, setFilter] = useState<BandFilter>('all')
+  const [category, setCategory] = useState<string | 'all'>('all')
+  const [source, setSource] = useState<SourceView | null>(null)
+  const [sourceLoading, setSourceLoading] = useState(false)
+  const [sourceError, setSourceError] = useState<string | null>(null)
   const unsubRef = useRef<(() => void) | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     return () => unsubRef.current?.()
   }, [])
+
+  const categoryCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const f of findings) {
+      for (const c of f.categories) {
+        m.set(c, (m.get(c) ?? 0) + 1)
+      }
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1])
+  }, [findings])
 
   const resetForNewRun = () => {
     unsubRef.current?.()
@@ -52,6 +69,9 @@ export default function App() {
     setJobStatus(null)
     setBusyId(null)
     setFilter('all')
+    setCategory('all')
+    setSource(null)
+    setSourceError(null)
   }
 
   const onFile = async (file: File | undefined) => {
@@ -130,11 +150,38 @@ export default function App() {
     }
   }
 
+  const onOpenSource = async (citation: Citation) => {
+    if (!jobId) return
+    const path = citation.source_path || citation.file
+    if (!path || path.startsWith('duckdb:')) {
+      setSourceError('No openable source file for this citation.')
+      setSource(null)
+      return
+    }
+    setSourceLoading(true)
+    setSourceError(null)
+    try {
+      const view = await fetchSource(jobId, {
+        path,
+        line: citation.line,
+        locator: citation.locator,
+        quote: citation.quote,
+      })
+      setSource(view)
+    } catch (err) {
+      setSource(null)
+      setSourceError(err instanceof Error ? err.message : 'Failed to open source')
+    } finally {
+      setSourceLoading(false)
+    }
+  }
+
   const waiting = phase === 'uploading' || phase === 'streaming'
   const highCount = findings.filter((f) => f.band === 'high').length
   const reviewCount = findings.filter(
     (f) => f.band === 'needs_human_verification',
   ).length
+  const showSource = sourceLoading || sourceError != null || source != null
 
   return (
     <div className="shell">
@@ -153,9 +200,8 @@ export default function App() {
           <p className="hero__eyebrow">Fraud findings feed</p>
           <h1 className="hero__brand">Auditor</h1>
           <p className="hero__lead">
-            Upload a GDPdU zip. Deterministic detectors stream ranked findings
-            with evidence — high-confidence fraud first, mid-band items flagged
-            for human verification.
+            Think like an auditor: priority risk patterns only. Findings are
+            grouped by category — open evidence at the cited line to verify.
           </p>
 
           <div className="hero__actions no-print">
@@ -243,6 +289,34 @@ export default function App() {
               </div>
             </div>
 
+            {categoryCounts.length > 0 && (
+              <div className="category-filters no-print" aria-label="Category filter">
+                <button
+                  type="button"
+                  className={
+                    category === 'all'
+                      ? 'filter filter--active'
+                      : 'filter'
+                  }
+                  onClick={() => setCategory('all')}
+                >
+                  All groups
+                </button>
+                {categoryCounts.map(([cat, n]) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={
+                      category === cat ? 'filter filter--active' : 'filter'
+                    }
+                    onClick={() => setCategory(cat)}
+                  >
+                    {categoryLabel(cat)} <span>{n}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="print-only print-cover">
               <h1>Auditor — findings report</h1>
               <p>
@@ -254,9 +328,11 @@ export default function App() {
             <FindingsList
               findings={findings}
               filter={filter}
+              category={category}
               busyId={busyId}
               onVerify={(id) => void onVerify(id)}
               onDismiss={(id) => void onDismiss(id)}
+              onOpenSource={(c) => void onOpenSource(c)}
             />
           </section>
         )}
@@ -264,13 +340,27 @@ export default function App() {
         {phase === 'idle' && findings.length === 0 && (
           <section className="empty-hint no-print">
             <p>
-              Detectors stay general (SoD, misclassification, cutoff, threshold
-              structuring, near-duplicates, unsupported). Skip-band findings stay
-              hidden. Mid-band items need your judgment.
+              Priority patterns: segregation of duties, unsupported payments,
+              misclassification, cut-off, and threshold structuring. Legal-form
+              near-duplicates (AG vs GmbH) are suppressed — auditors focus on
+              risk, not master-data hygiene.
             </p>
           </section>
         )}
       </main>
+
+      {showSource && (
+        <SourceViewer
+          data={source}
+          loading={sourceLoading}
+          error={sourceError}
+          onClose={() => {
+            setSource(null)
+            setSourceError(null)
+            setSourceLoading(false)
+          }}
+        />
+      )}
     </div>
   )
 }

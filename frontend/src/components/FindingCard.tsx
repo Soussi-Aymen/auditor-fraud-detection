@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Citation, Finding } from '../types'
+import { categoryLabel } from '../types'
 
 const BAND_LABEL: Record<Finding['band'], string> = {
   skip: 'Skip',
@@ -12,9 +13,16 @@ type Props = {
   busy: boolean
   onVerify: (id: string) => void
   onDismiss: (id: string) => void
+  onOpenSource: (citation: Citation) => void
 }
 
-export function FindingCard({ finding, busy, onVerify, onDismiss }: Props) {
+export function FindingCard({
+  finding,
+  busy,
+  onVerify,
+  onDismiss,
+  onOpenSource,
+}: Props) {
   const [openCitation, setOpenCitation] = useState<number | null>(null)
   const review = finding.band === 'needs_human_verification'
   const closed = finding.status !== 'open'
@@ -27,6 +35,8 @@ export function FindingCard({ finding, busy, onVerify, onDismiss }: Props) {
     openCitation === null
       ? undefined
       : finding.citations.find((c) => c.n === openCitation)
+
+  const canOpen = (c: Citation) => Boolean(c.source_path || !c.file.startsWith('duckdb:'))
 
   return (
     <article
@@ -62,7 +72,7 @@ export function FindingCard({ finding, busy, onVerify, onDismiss }: Props) {
 
       {finding.categories.length > 0 && (
         <p className="finding__categories">
-          {finding.categories.join(' · ')}
+          {finding.categories.map(categoryLabel).join(' · ')}
         </p>
       )}
 
@@ -89,12 +99,24 @@ export function FindingCard({ finding, busy, onVerify, onDismiss }: Props) {
           {active && (
             <div className="citation-detail">
               <div className="citation-detail__file">
-                <strong>{active.file}</strong>
-                <span>{active.locator}</span>
+                <strong>{active.source_path || active.file}</strong>
+                <span>{active.detail || active.locator}</span>
+                {active.line != null && (
+                  <span className="citation-detail__line">Line {active.line}</span>
+                )}
               </div>
               <blockquote className="citation-detail__quote">
                 {active.quote}
               </blockquote>
+              {canOpen(active) && (
+                <button
+                  type="button"
+                  className="btn btn--ghost citation-detail__open"
+                  onClick={() => onOpenSource(active)}
+                >
+                  Open source at reference
+                </button>
+              )}
             </div>
           )}
         </div>
