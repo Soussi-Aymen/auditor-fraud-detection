@@ -13,7 +13,9 @@ import {
   type BandFilter,
 } from './components/FindingsList'
 import { SourceViewer } from './components/SourceViewer'
+import { SummaryReportView } from './components/SummaryReportView'
 import { exportFindingsPdf } from './exportPdf'
+import { buildSummaryReport } from './summaryReport'
 import type { Citation, Finding, JobStatus, SourceView } from './types'
 import { categoryLabel } from './types'
 import './App.css'
@@ -200,6 +202,7 @@ export default function App() {
     return [...m.entries()].sort((a, b) => b[1] - a[1])
   }, [categoryScoped, category])
   const showSource = sourceLoading || sourceError != null || source != null
+  const summary = useMemo(() => buildSummaryReport(findings), [findings])
 
   return (
     <div className="shell">
@@ -234,13 +237,22 @@ export default function App() {
               />
             </label>
             {findings.length > 0 && (
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => exportFindingsPdf(findings, jobId)}
-              >
-                Export PDF
-              </button>
+              <div className="export-actions">
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => exportFindingsPdf(findings, jobId, 'summary')}
+                >
+                  Export summary PDF
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => exportFindingsPdf(findings, jobId, 'detailed')}
+                >
+                  Export detailed PDF
+                </button>
+              </div>
             )}
           </div>
 
@@ -366,23 +378,31 @@ export default function App() {
               </p>
             )}
 
-            <div className="print-only print-cover">
-              <h1>Auditor — findings report</h1>
-              <p>
-                Job {jobId ?? '—'} · {findings.length} findings · exported{' '}
-                {new Date().toLocaleString()}
-              </p>
+            <div className="print-only print-detailed">
+              <div className="print-cover">
+                <h1>Auditor — detailed findings report</h1>
+                <p>
+                  Job {jobId ?? '—'} · {findings.length} findings · exported{' '}
+                  {new Date().toLocaleString()}
+                </p>
+              </div>
             </div>
 
-            <FindingsList
-              findings={findings}
-              filter={filter}
-              category={category}
-              busyId={busyId}
-              onVerify={(id) => void onVerify(id)}
-              onDismiss={(id) => void onDismiss(id)}
-              onOpenSource={(c) => void onOpenSource(c)}
-            />
+            <div className="print-only print-summary">
+              <SummaryReportView report={summary} jobId={jobId} />
+            </div>
+
+            <div className="screen-findings">
+              <FindingsList
+                findings={findings}
+                filter={filter}
+                category={category}
+                busyId={busyId}
+                onVerify={(id) => void onVerify(id)}
+                onDismiss={(id) => void onDismiss(id)}
+                onOpenSource={(c) => void onOpenSource(c)}
+              />
+            </div>
           </section>
         )}
 

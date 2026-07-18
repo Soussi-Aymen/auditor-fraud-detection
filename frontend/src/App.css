@@ -712,6 +712,12 @@ body {
   display: none;
 }
 
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -780,19 +786,44 @@ body {
   }
 
   .print-only {
+    display: none;
+  }
+
+  body[data-pdf-mode='detailed'] .print-detailed {
     display: block;
   }
 
-  .print-cover h1 {
+  body[data-pdf-mode='detailed'] .screen-findings {
+    display: block;
+  }
+
+  body[data-pdf-mode='summary'] .print-summary {
+    display: block;
+  }
+
+  body[data-pdf-mode='summary'] .screen-findings,
+  body[data-pdf-mode='summary'] .feed__toolbar,
+  body[data-pdf-mode='summary'] .category-filters,
+  body[data-pdf-mode='summary'] .filter-combo {
+    display: none !important;
+  }
+
+  .print-cover h1,
+  .summary-report__cover h1 {
     font-family: var(--font-display);
     font-size: 1.6rem;
     margin: 0 0 0.35rem;
   }
 
-  .print-cover p {
-    margin: 0 0 1.25rem;
+  .print-cover p,
+  .summary-report__cover p {
+    margin: 0 0 0.65rem;
     font-size: 0.85rem;
     color: #444;
+  }
+
+  .summary-report__note {
+    font-style: italic;
   }
 
   .app {
@@ -812,5 +843,90 @@ body {
 
   .finding__actions {
     display: none;
+  }
+
+  .summary-report__section {
+    margin: 1.1rem 0 0;
+    break-inside: avoid;
+  }
+
+  .summary-report__section h2 {
+    font-size: 1.05rem;
+    margin: 0 0 0.45rem;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.25rem;
+  }
+
+  .summary-report__stats {
+    display: flex;
+    gap: 1.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.9rem;
+  }
+
+  .summary-report__flags {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+  }
+
+  .summary-report__priority {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .summary-report__priority li {
+    display: grid;
+    grid-template-columns: 3rem 3.5rem 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.88rem;
+  }
+
+  .summary-report__priority p {
+    margin: 0.15rem 0 0;
+    color: #333;
+  }
+
+  .summary-report__pct {
+    font-weight: 700;
+  }
+
+  .summary-report__band {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #555;
+  }
+
+  .summary-report__cat {
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  .summary-report__cat h3 {
+    margin: 0 0 0.25rem;
+    font-size: 0.95rem;
+  }
+
+  .summary-report__cat h3 span {
+    font-weight: 500;
+    color: #555;
+    font-size: 0.8rem;
+  }
+
+  .summary-report__pattern {
+    margin: 0 0 0.3rem;
+    font-size: 0.88rem;
+  }
+
+  .summary-report__cat ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.85rem;
   }
 }
