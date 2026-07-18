@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { JobStatus } from '../types'
 
-/** Initial ETA while parse + detect (+ optional LLM) run. */
-const INITIAL_ETA_SEC = 20
+/** Default ETA for a full analysis run (upload + parse + detect + LLM). */
+const DEFAULT_ETA_SEC = 60
 
 type Props = {
   phase: 'uploading' | 'streaming'
@@ -17,30 +17,38 @@ function labelFor(phase: Props['phase'], jobStatus: JobStatus | null): string {
   return 'Streaming ranked findings…'
 }
 
-export function AnalysisProgress({ phase, jobStatus, findingCount }: Props) {
-  const [eta, setEta] = useState(INITIAL_ETA_SEC)
+function formatEta(seconds: number): string {
+  const s = Math.max(1, Math.ceil(seconds))
+  if (s >= 60) {
+    const m = Math.floor(s / 60)
+    const r = s % 60
+    return r === 0 ? `~${m}m` : `~${m}m ${r.toString().padStart(2, '0')}s`
+  }
+  return `~${s}s`
+}
 
+export function AnalysisProgress({ phase, jobStatus, findingCount }: Props) {
+  const [startedAt, setStartedAt] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
+
+  // One clock for the whole run (starts when upload/stream begins)
   useEffect(() => {
-    setEta(INITIAL_ETA_SEC)
+    if (phase === 'uploading') {
+      setStartedAt(Date.now())
+      setNow(Date.now())
+    }
   }, [phase])
 
   useEffect(() => {
-    if (phase !== 'uploading' && phase !== 'streaming') return
-    const id = window.setInterval(() => {
-      setEta((s) => {
-        // Keep a soft floor so the clock never reads “done” while still waiting
-        if (s <= 3) return 3
-        const step = findingCount > 0 ? 2 : 1
-        return Math.max(3, s - step)
-      })
-    }, 1000)
+    const id = window.setInterval(() => setNow(Date.now()), 250)
     return () => window.clearInterval(id)
-  }, [phase, findingCount])
+  }, [phase])
 
-  const mins = Math.floor(eta / 60)
-  const secs = eta % 60
-  const etaLabel =
-    mins > 0 ? `~${mins}m ${secs.toString().padStart(2, '0')}s` : `~${secs}s`
+  const elapsed = (now - startedAt) / 1000
+  let remaining = Math.ceil(DEFAULT_ETA_SEC - elapsed)
+  if (remaining < 1) {
+    remaining = findingCount > 0 ? 1 : 2
+  }
 
   return (
     <div className="progress" role="status" aria-live="polite">
@@ -48,7 +56,7 @@ export function AnalysisProgress({ phase, jobStatus, findingCount }: Props) {
       <div className="progress__copy">
         <p className="progress__label">{labelFor(phase, jobStatus)}</p>
         <p className="progress__eta">
-          Estimated time remaining <strong>{etaLabel}</strong>
+          Estimated time remaining <strong>{formatEta(remaining)}</strong>
         </p>
         {findingCount > 0 && (
           <p className="progress__partial">

@@ -279,10 +279,10 @@ body {
 .feed__toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem 0.85rem;
+  margin-bottom: 0.55rem;
 }
 
 .feed__title {
@@ -291,6 +291,7 @@ body {
   font-size: 1.75rem;
   font-weight: 400;
   letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .filters {
@@ -551,7 +552,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: -0.35rem 0 1.25rem;
+  margin: 0 0 0.75rem;
 }
 
 .filter-combo {
@@ -559,7 +560,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem 0.65rem;
-  margin: -0.5rem 0 1.1rem;
+  margin: 0 0 0.9rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
@@ -760,8 +761,9 @@ body {
   }
 
   .feed__toolbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem 0.65rem;
   }
 }
 
