@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from app.config import apply_aliases
+from app.parsing.encoding import pandas_encoding_for
 from app.parsing.normalize import normalize_dataframe
 
 
@@ -18,13 +19,14 @@ def _safe_name(relative: str) -> str:
 
 
 def _read_csv(path: Path) -> pd.DataFrame:
+    enc = pandas_encoding_for(path)
     # Prefer semicolon (DE); fall back to comma if single column
     df = pd.read_csv(
         path,
         sep=";",
         dtype=str,
-        encoding="utf-8",
-        encoding_errors="replace",
+        encoding=enc,
+        encoding_errors="strict",
         engine="python",
     )
     if df.shape[1] == 1:
@@ -32,8 +34,8 @@ def _read_csv(path: Path) -> pd.DataFrame:
             path,
             sep=",",
             dtype=str,
-            encoding="utf-8",
-            encoding_errors="replace",
+            encoding=enc,
+            encoding_errors="strict",
             engine="python",
         )
     return df

@@ -78,6 +78,7 @@ class JobStore:
             job.status = JobStatus.parsing  # detecting / LLM still under parsing for SSE
 
             def _detect_and_enrich() -> list[Finding]:
+                # Skip policy LLM when disabled — shaves one round-trip before detectors.
                 cfg = policy_config_overrides(
                     parse.document_chunks,
                     load_detector_config(),
@@ -85,6 +86,7 @@ class JobStore:
                 stage2 = cfg.get("stage2") or {}
                 max_quote = int(stage2.get("max_quote_chars", 160))
                 raw = run_detectors(parse, cfg=cfg)
+                # LLM narrates top-N in parallel (see LLM_NARRATE_* env); rest use templates.
                 return enrich_findings(raw, max_quote_chars=max_quote)
 
             findings = await asyncio.to_thread(_detect_and_enrich)

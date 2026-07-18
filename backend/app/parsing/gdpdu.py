@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 from app.config import apply_aliases
+from app.parsing.encoding import pandas_encoding_for
 from app.parsing.normalize import normalize_dataframe
 
 
@@ -75,8 +76,8 @@ def load_gdpdu_tables(
                 names=columns,
                 dtype=str,
                 quotechar='"',
-                encoding="utf-8",
-                encoding_errors="replace",
+                encoding=pandas_encoding_for(txt_path),
+                encoding_errors="strict",
                 engine="python",
             )
             # Drop empty trailing columns if row shorter — pandas already aligns

@@ -31,8 +31,10 @@ def find_line(
     if not cleaned:
         return None
     try:
+        from app.parsing.encoding import decode_bytes
+
         raw = file_path.read_bytes()[:max_scan_bytes]
-        text = raw.decode("utf-8", errors="replace")
+        text = decode_bytes(raw)
     except OSError:
         return None
 

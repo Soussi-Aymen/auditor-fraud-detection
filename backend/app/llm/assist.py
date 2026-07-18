@@ -62,7 +62,7 @@ def trim_citation_quotes(citations: list[Citation], *, max_chars: int = 160) -> 
         return citations
 
     if not openai_enabled():
-        return [_hard_trim(c, max_chars) for c in citations]
+        return hard_trim_citations(citations, max_chars=max_chars)
 
     payload = [
         {"n": c.n, "file": c.file, "locator": c.locator, "quote": c.quote}
@@ -82,14 +82,18 @@ def trim_citation_quotes(citations: list[Citation], *, max_chars: int = 160) -> 
             response_model=QuoteTrimOut,
         )
         if len(out.quotes) != len(citations):
-            return [_hard_trim(c, max_chars) for c in citations]
+            return hard_trim_citations(citations, max_chars=max_chars)
         trimmed: list[Citation] = []
         for c, q in zip(citations, out.quotes, strict=True):
             quote = _safe_substring_quote(c.quote, q, max_chars)
             trimmed.append(c.model_copy(update={"quote": quote}))
         return trimmed
     except Exception:  # noqa: BLE001
-        return [_hard_trim(c, max_chars) for c in citations]
+        return hard_trim_citations(citations, max_chars=max_chars)
+
+
+def hard_trim_citations(citations: list[Citation], *, max_chars: int = 160) -> list[Citation]:
+    return [_hard_trim(c, max_chars) for c in citations]
 
 
 def extract_policy_overrides(chunks: list[DocumentChunk]) -> dict[str, Any]:

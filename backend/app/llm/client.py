@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import TypeVar
 
 from pydantic import BaseModel
@@ -31,6 +32,13 @@ def model_fast() -> str:
     return os.environ.get("OPENAI_MODEL_FAST", "gpt-5.6-terra").strip() or "gpt-5.6-terra"
 
 
+@lru_cache(maxsize=1)
+def _client():
+    from openai import OpenAI
+
+    return OpenAI()
+
+
 def structured_parse(
     *,
     model: str,
@@ -42,9 +50,7 @@ def structured_parse(
     if not openai_enabled():
         raise RuntimeError("OPENAI_API_KEY not set")
 
-    from openai import OpenAI
-
-    client = OpenAI()
+    client = _client()
     # Prefer Responses API parse; fall back to chat.completions.parse.
     try:
         resp = client.responses.parse(

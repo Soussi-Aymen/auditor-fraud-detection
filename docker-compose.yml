@@ -9,6 +9,10 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_MODEL_PRIMARY=${OPENAI_MODEL_PRIMARY:-gpt-5.6}
       - OPENAI_MODEL_FAST=${OPENAI_MODEL_FAST:-gpt-5.6-terra}
+      - LLM_NARRATE_MAX=${LLM_NARRATE_MAX:-8}
+      - LLM_NARRATE_WORKERS=${LLM_NARRATE_WORKERS:-4}
+      - LLM_TRIM_QUOTES=${LLM_TRIM_QUOTES:-0}
+      - LLM_POLICY_EXTRACT=${LLM_POLICY_EXTRACT:-1}
     volumes:
       - ./backend/data/sessions:/app/data/sessions
       - ./data:/data:ro

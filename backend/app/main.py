@@ -160,7 +160,9 @@ def view_source(
         )
 
     try:
-        text = target.read_text(encoding="utf-8", errors="replace")
+        from app.parsing.encoding import read_text_file
+
+        text = read_text_file(target)
     except OSError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
