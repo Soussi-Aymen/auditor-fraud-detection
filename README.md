@@ -20,8 +20,8 @@ cp .env.example .env   # optional OPENAI_API_KEY
 docker compose up --build
 ```
 
-- UI: ue
-- API: http://127.0.0.1:8000  
+- UI: http://127.0.0.1:5173
+- API: http://127.0.0.1:8000
 
 Compose e2e (upload + SSE):
 
@@ -52,12 +52,14 @@ OpenAI env (see `.env.example`): `OPENAI_API_KEY`, `OPENAI_MODEL_PRIMARY=gpt-5.6
 
 ## Architecture
 
+![Auditor fraud findings architecture](docs/architecture.png)
+
 ```
 ZipUpload → Parse(GDPdU/CSV/XLSX/PDF/DOCX) → DuckDB
                 ↓
          Category detectors (YAML) → Stage 2 citations → Confidence bands
                 ↓
-         Optional LLM narrate → SSE → React findings list
+         Optional GPT-5.6 narrate → SSE → React findings list
 ```
 
 Confidence: `clamp(0..100, base + statistical_strength + stage2_delta + multi_category_boost)`
@@ -98,7 +100,9 @@ Points: F1=40, F2=25, F3=25, F4=10. Do not “fix” eval by baking GT vendors/u
 ```
 /
 ├── docker-compose.yml
-├── docs/IMPLEMENTATION_PLAN.md
+├── docs/
+│   ├── architecture.png
+│   └── IMPLEMENTATION_PLAN.md
 ├── data/                 # sample zip + sealed GT (eval only)
 ├── backend/              # FastAPI + DuckDB
 └── frontend/             # Bun + Vite 8 + React + TypeScript strict
