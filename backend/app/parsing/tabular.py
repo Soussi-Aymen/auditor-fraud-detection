@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import re
 from pathlib import Path
 
@@ -18,26 +19,43 @@ def _safe_name(relative: str) -> str:
     return re.sub(r"[^a-z0-9_]+", "_", stem).strip("_")
 
 
+def _strip_outer_quotes(value: object) -> object:
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+        return text[1:-1]
+    return value
+
+
+def _is_junk_path(path: Path, root: Path) -> bool:
+    parts_l = {p.lower() for p in path.relative_to(root).parts}
+    if "__macosx" in parts_l:
+        return True
+    name = path.name
+    return name.startswith("._") or name == ".DS_Store"
+
+
 def _read_csv(path: Path) -> pd.DataFrame:
     enc = pandas_encoding_for(path)
+    common = dict(dtype=str, encoding=enc, encoding_errors="strict", engine="python")
+
+    def _try(sep: str, **extra: object) -> pd.DataFrame:
+        return pd.read_csv(path, sep=sep, **common, **extra)
+
     # Prefer semicolon (DE); fall back to comma if single column
-    df = pd.read_csv(
-        path,
-        sep=";",
-        dtype=str,
-        encoding=enc,
-        encoding_errors="strict",
-        engine="python",
-    )
+    try:
+        df = _try(";")
+    except (pd.errors.ParserError, csv.Error):
+        df = _try(";", quoting=csv.QUOTE_NONE)
+        df = df.map(_strip_outer_quotes)
+
     if df.shape[1] == 1:
-        df = pd.read_csv(
-            path,
-            sep=",",
-            dtype=str,
-            encoding=enc,
-            encoding_errors="strict",
-            engine="python",
-        )
+        try:
+            df = _try(",")
+        except (pd.errors.ParserError, csv.Error):
+            df = _try(",", quoting=csv.QUOTE_NONE)
+            df = df.map(_strip_outer_quotes)
     return df
 
 
@@ -49,6 +67,8 @@ def load_csv_tables(
     frames: dict[str, pd.DataFrame] = {}
     sources: dict[str, TableSource] = {}
     for path in sorted(root.rglob("*.csv")):
+        if _is_junk_path(path, root):
+            continue
         rel = str(path.relative_to(root))
         df = _read_csv(path)
         df.columns = apply_aliases([str(c) for c in df.columns], aliases)
@@ -66,7 +86,7 @@ def load_xlsx_tables(
     frames: dict[str, pd.DataFrame] = {}
     sources: dict[str, TableSource] = {}
     for path in sorted(root.rglob("*.xlsx")):
-        if path.name.startswith("~$"):
+        if path.name.startswith("~$") or _is_junk_path(path, root):
             continue
         rel = str(path.relative_to(root))
         base = _safe_name(rel)
@@ -77,6 +97,5 @@ def load_xlsx_tables(
             sheet_key = re.sub(r"[^a-z0-9_]+", "_", sheet.lower()).strip("_")
             key = f"xlsx_{base}" if len(xl.sheet_names) == 1 else f"xlsx_{base}__{sheet_key}"
             frames[key] = normalize_dataframe(df)
-            # Point at workbook; sheet noted in path fragment for display
             sources[key] = TableSource(path=rel, has_header=True)
     return frames, sources

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -52,6 +53,39 @@ def _safe_table_name(folder: str, table: str) -> str:
     return re.sub(r"[^a-z0-9_]+", "_", raw).strip("_")
 
 
+def _strip_outer_quotes(value: object) -> object:
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+        return text[1:-1]
+    return value
+
+
+def _read_gdpdu_txt(txt_path: Path, columns: list[str]) -> pd.DataFrame:
+    """
+    Load a GDPdU semicolon TXT.
+
+    Many exports wrap fields in quotes but also embed raw " inside descriptions
+    (e.g. Projekt "PRO114"). Fall back to QUOTE_NONE + strip outer quotes.
+    """
+    enc = pandas_encoding_for(txt_path)
+    common = dict(
+        sep=";",
+        header=None,
+        names=columns,
+        dtype=str,
+        encoding=enc,
+        encoding_errors="strict",
+        engine="python",
+    )
+    try:
+        return pd.read_csv(txt_path, quotechar='"', **common)
+    except (pd.errors.ParserError, csv.Error):
+        df = pd.read_csv(txt_path, quoting=csv.QUOTE_NONE, **common)
+        return df.map(_strip_outer_quotes)
+
+
 def load_gdpdu_tables(
     root: Path,
     aliases: dict[str, str],
@@ -62,6 +96,8 @@ def load_gdpdu_tables(
     frames: dict[str, pd.DataFrame] = {}
     sources: dict[str, TableSource] = {}
     for index_path in sorted(root.rglob("index.xml")):
+        if "__macosx" in {p.lower() for p in index_path.parts}:
+            continue
         folder = index_path.parent.name
         for spec in parse_index_xml(index_path):
             url = str(spec["url"])
@@ -69,18 +105,7 @@ def load_gdpdu_tables(
             txt_path = index_path.parent / url
             if not txt_path.is_file():
                 continue
-            df = pd.read_csv(
-                txt_path,
-                sep=";",
-                header=None,
-                names=columns,
-                dtype=str,
-                quotechar='"',
-                encoding=pandas_encoding_for(txt_path),
-                encoding_errors="strict",
-                engine="python",
-            )
-            # Drop empty trailing columns if row shorter — pandas already aligns
+            df = _read_gdpdu_txt(txt_path, columns)
             renamed = apply_aliases(list(df.columns.astype(str)), aliases)
             df.columns = renamed
             df = normalize_dataframe(df)
