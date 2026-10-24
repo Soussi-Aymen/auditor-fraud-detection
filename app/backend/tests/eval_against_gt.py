@@ -21,8 +21,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-BACKEND = ROOT / "backend"
+ROOT = Path(__file__).resolve().parents[3]
+BACKEND = ROOT / "app" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from app.detection import run_detectors  # noqa: E402

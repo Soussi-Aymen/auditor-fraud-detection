@@ -6,7 +6,7 @@
 # Python
 .venv/
 venv/
-backend/vendor/
+**/vendor/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -18,13 +18,17 @@ __pycache__/
 htmlcov/
 
 # Backend runtime
+app/backend/data/sessions/*
+!app/backend/data/sessions/.gitkeep
 backend/data/sessions/*
 !backend/data/sessions/.gitkeep
-backend/**/*.duckdb
-backend/**/*.duckdb.wal
+**/*.duckdb
+**/*.duckdb.wal
 
 # Node / Bun / frontend
 node_modules/
+app/frontend/dist/
+app/frontend/.vite/
 frontend/dist/
 frontend/.vite/
 *.tsbuildinfo

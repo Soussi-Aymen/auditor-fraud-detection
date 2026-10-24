@@ -7,8 +7,8 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-BACKEND = ROOT / "backend"
+ROOT = Path(__file__).resolve().parents[3]
+BACKEND = ROOT / "app" / "backend"
 sys.path.insert(0, str(BACKEND))
 
 from fastapi.testclient import TestClient  # noqa: E402

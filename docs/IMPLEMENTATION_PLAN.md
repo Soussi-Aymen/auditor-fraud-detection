@@ -96,11 +96,12 @@ SSE-streamed ranked list (no graph/dashboard). Each finding:
 ├── docs/
 │   └── IMPLEMENTATION_PLAN.md   # this file
 ├── data/                        # sample zip + sealed GT (eval only)
-├── backend/
-│   ├── Dockerfile
-│   ├── app/ ...
-│   └── tests/                   # includes eval_against_gt.py (test-only)
-└── frontend/                    # bun + vite 8 + react + typescript 7 strict
+└── app/
+    ├── backend/
+    │   ├── Dockerfile
+    │   ├── app/ ...             # FastAPI package (sealed GT never imported here)
+    │   └── tests/               # includes eval_against_gt.py (test-only)
+    └── frontend/                # bun + Vite+ / vite 8 + react + typescript strict
 ```
 
 ---

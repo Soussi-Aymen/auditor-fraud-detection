@@ -1,9 +1,9 @@
-import type { SummaryReport } from '../summaryReport'
+import type { SummaryReport } from "../summaryReport";
 
 type Props = {
-  report: SummaryReport
-  jobId: string | null
-}
+  report: SummaryReport;
+  jobId: string | null;
+};
 
 export function SummaryReportView({ report, jobId }: Props) {
   return (
@@ -11,13 +11,12 @@ export function SummaryReportView({ report, jobId }: Props) {
       <header className="summary-report__cover">
         <h1>Auditor — summary report</h1>
         <p>
-          Job {jobId ?? '—'} · {report.total} findings ·{' '}
-          {report.highCount} high · {report.reviewCount} need verification ·{' '}
-          exported {new Date().toLocaleString()}
+          Job {jobId ?? "—"} · {report.total} findings · {report.highCount} high ·{" "}
+          {report.reviewCount} need verification · exported {new Date().toLocaleString()}
         </p>
         <p className="summary-report__note">
-          Condensed view for partners / planning. Open the detailed report for
-          full citations and evidence.
+          Condensed view for partners / planning. Open the detailed report for full citations and
+          evidence.
         </p>
       </header>
 
@@ -52,12 +51,8 @@ export function SummaryReportView({ report, jobId }: Props) {
         <ol className="summary-report__priority">
           {report.priority.map((f) => (
             <li key={f.id}>
-              <span className="summary-report__pct">
-                {Math.round(f.confidence)}%
-              </span>
-              <span className="summary-report__band">
-                {f.band === 'high' ? 'High' : 'Verify'}
-              </span>
+              <span className="summary-report__pct">{Math.round(f.confidence)}%</span>
+              <span className="summary-report__band">{f.band === "high" ? "High" : "Verify"}</span>
               <div>
                 <strong>{f.title}</strong>
                 <p>{f.summary.length > 180 ? `${f.summary.slice(0, 177)}…` : f.summary}</p>
@@ -72,10 +67,10 @@ export function SummaryReportView({ report, jobId }: Props) {
         {report.categories.map((dig) => (
           <article key={dig.category} className="summary-report__cat">
             <h3>
-              {dig.label}{' '}
+              {dig.label}{" "}
               <span>
                 {dig.count} · max {Math.round(dig.maxConfidence)}%
-                {dig.highCount > 0 ? ` · ${dig.highCount} high` : ''}
+                {dig.highCount > 0 ? ` · ${dig.highCount} high` : ""}
               </span>
             </h3>
             <p className="summary-report__pattern">{dig.pattern}</p>
@@ -90,5 +85,5 @@ export function SummaryReportView({ report, jobId }: Props) {
         ))}
       </section>
     </div>
-  )
+  );
 }

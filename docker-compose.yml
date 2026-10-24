@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    build: ./app/backend
     ports:
       - "8000:8000"
     env_file:
@@ -14,12 +14,12 @@ services:
       - LLM_TRIM_QUOTES=${LLM_TRIM_QUOTES:-0}
       - LLM_POLICY_EXTRACT=${LLM_POLICY_EXTRACT:-1}
     volumes:
-      - ./backend/data/sessions:/app/data/sessions
+      - ./app/backend/data/sessions:/app/data/sessions
       - ./data:/data:ro
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build: ./app/frontend
     ports:
       - "5173:80"
     depends_on:

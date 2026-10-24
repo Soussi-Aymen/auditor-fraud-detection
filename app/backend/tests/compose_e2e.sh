@@ -3,7 +3,7 @@
 # Requires Docker Desktop with WSL integration (or native Docker).
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT"
 
 ZIP="${ROOT}/data/Uebungsdaten_Muster_Verpackungen.zip"

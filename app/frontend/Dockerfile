@@ -1,5 +1,5 @@
-# Multi-stage: Bun build + nginx serve
-FROM oven/bun:1 AS build
+# Multi-stage: Bun 1.4.4 (security-patched) + Vite+ build, nginx serve
+FROM oven/bun:1.4.4 AS build
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile

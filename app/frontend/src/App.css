@@ -160,7 +160,9 @@ body {
   font-size: 0.92rem;
   font-weight: 650;
   cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .upload-btn:hover {
@@ -789,22 +791,22 @@ body {
     display: none;
   }
 
-  body[data-pdf-mode='detailed'] .print-detailed {
+  body[data-pdf-mode="detailed"] .print-detailed {
     display: block;
   }
 
-  body[data-pdf-mode='detailed'] .screen-findings {
+  body[data-pdf-mode="detailed"] .screen-findings {
     display: block;
   }
 
-  body[data-pdf-mode='summary'] .print-summary {
+  body[data-pdf-mode="summary"] .print-summary {
     display: block;
   }
 
-  body[data-pdf-mode='summary'] .screen-findings,
-  body[data-pdf-mode='summary'] .feed__toolbar,
-  body[data-pdf-mode='summary'] .category-filters,
-  body[data-pdf-mode='summary'] .filter-combo {
+  body[data-pdf-mode="summary"] .screen-findings,
+  body[data-pdf-mode="summary"] .feed__toolbar,
+  body[data-pdf-mode="summary"] .category-filters,
+  body[data-pdf-mode="summary"] .filter-combo {
     display: none !important;
   }
 
